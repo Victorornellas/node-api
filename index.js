@@ -1,21 +1,25 @@
+require("dotenv").config()
+const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
 app.use(express.json());
 
 const PORT = 3000
 
-let users = [
-    { id: 1, name: "Victor", email: "victor@email.com"},
-    { id: 2, name: "Yasmin", email: "yasmin@email.com"},
-    { id: 3, name: "Gabriella", email: "gabriella@email.com"},
-    { id: 4, name: "Lucilene", email: "lucilene@email.com"},
-    { id: 5, name: "Marilene", email: "marilene@email.com"},
-]
+mongoose.connect("mongodb+srv://victorhugoornellas_db_user:victor123@cluster0.jbzjl37.mongodb.net/?appName=Cluster0")
+  .then(() => console.log("Conectado ao MongoDB!"))
+  .catch((err) => console.log("Erro ao conectar:", err))
 
-app.post('/users', (req, res) =>{
-    const newUser = req.body
-    users.push(newUser)
-    res.status(201).json(newUser)
+const userSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    age: Number,
+})
+const User = mongoose.model("User", userSchema)
+
+app.post("/users", async (req, res) => {
+  const newUser = await User.create(req.body)
+  res.status(201).json(newUser)
 })
 
 app.get('/', (req, res) =>{
@@ -23,23 +27,25 @@ app.get('/', (req, res) =>{
 
 })
 
-app.get('/users/:id', (req, res) =>{
-    const id = req.params.id
-    const user = users.find((u) => u.id === Number(id))
+app.get("/users", async (req, res) => {
+  const users = await User.find()
+  res.json(users)
+})
+
+app.get('/users/:id', async (req, res) =>{
+    console.log(">>> ROTA /users/:id FOI CHAMADA <<<")
+    const user = await User.findById(req.params.id)
     res.json(user)
 })
 
-app.delete('/users/:id', (req, res) =>{
-    const id = Number(req.params.id)
-    users = users.filter((u) => u.id !== id)
+app.delete('/users/:id', async (req, res) =>{
+    const user = await User.findByIdAndDelete(req.params.id)
     res.status(204).send()
 })
 
-app.put('/users/:id', (req, res) =>{
-    const id = Number(req.params.id)
-    const updatedUser = req.body
-    users = users.map((u) => (u.id === id ? {...u, ...updatedUser} : u))
-    res.json(updatedUser)
+app.put('/users/:id', async (req, res) => {
+    const updateUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    res.json(updateUser)
 })
 
 app.listen(PORT, () => {
